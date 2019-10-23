@@ -1,9 +1,13 @@
 const express = require("express")
 const app = express()
 const bodyParser = require("body-parser")
+const morgan = require('morgan')
+const morganBody = require('morgan-body')
 
 app.use(bodyParser.json())
+app.use(morgan('tiny'))
 
+morganBody(app)
 let people = [
     {
         name: "Arto Hellas",
@@ -27,6 +31,10 @@ let people = [
     }
 ]
 
+const generateID = () => {
+    return Math.floor(Math.random() * (1000 - 1) + 1)
+}
+
 let date = new Date()
 app.get('/people', (req, res) => {
     res.json(people)
@@ -47,7 +55,36 @@ app.get('/people/:id', (req, res) => {
     }
 })
 
+app.delete('/people/:id', (req, res) => {
+    const id = Number(req.params.id)
+    people = people.filter(p => p.id !== id)
+
+    res.status(204).end()
+})
+
+app.post('/people', (req, res) => {
+    const body = req.body
+
+    if(!body.name || !body.number) {
+        return res.status(400).json({
+            error: "content missing"
+        })
+    } else if(people.find(p => p.name === body.name)) {
+        return res.status(400).json({
+            error: "Name already in phonebook!"
+        })
+    }
+
+    const person = {
+        name: body.name,
+        number: body.number,
+        id: generateID(),
+    }
+
+    people = people.concat(person)
+
+    res.json(person)
+})
+
 const port = 3001
 app.listen(port)
-console.log(`Server running on port ${port}`)
-console.log('hello')
